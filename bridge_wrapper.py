@@ -31,7 +31,6 @@ from detection_helpers import *
  # load configuration for object detector
 config = ConfigProto()
 config.gpu_options.allow_growth = True
-obj_imgs = []
 
 class BoundaryBox:
     def __init__(self, box, name:str, id):
@@ -149,6 +148,7 @@ class YOLOv7_DeepSORT:
 
             self.tracker.predict()  # Call the tracker
             self.tracker.update(detections) #  updtate using Kalman Gain
+            obj_imgs = []
 
             for track in self.tracker.tracks:  # update new findings AKA tracks
                 if not track.is_confirmed() or track.time_since_update > 1:
@@ -165,11 +165,9 @@ class YOLOv7_DeepSORT:
                 if verbose == 2:
                     print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
 
-                parcel = BoundaryBox([frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])], class_name, track.track_id])
+                parcel = BoundaryBox(frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])], class_name, track.track_id)
 
-                self.obj_imgs.append(parcel)
-                for x in self.obj_imgs:
-                    output.image(x.box, caption=f"Object: {x.name} - ID: {track.x.id}")
+                obj_imgs.append(parcel)
                     
             # -------------------------------- Tracker work ENDS here -----------------------------------------------------------------------
             if verbose >= 1:
@@ -184,6 +182,8 @@ class YOLOv7_DeepSORT:
 
             if show_live:
                 output.image(result)
+                # for x in obj_imgs:
+                #     output.image(x.box, caption=f"Object: {x.name} - ID: {x.id}")
                 # cv2.imshow("Output Video", result)
                 # if cv2.waitKey(1) & 0xFF == ord('q'): break
         
