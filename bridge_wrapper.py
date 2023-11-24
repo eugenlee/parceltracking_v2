@@ -7,13 +7,13 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # comment out below line to enable tens
 import time
 import tensorflow as tf
 import streamlit as st
+from st_clickable_images import clickable_images
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
     
-import cv2
-import numpy as np
+import base64
 import matplotlib.pyplot as plt
 
 from tensorflow.compat.v1 import ConfigProto # DeepSORT official implementation uses tf1.x so we have to do some modifications to avoid errors
@@ -28,9 +28,11 @@ from tracking_helpers import read_class_names, create_box_encoder
 from detection_helpers import *
 
 
- # load configuration for object detector
+# load configuration for object detector
 config = ConfigProto()
 config.gpu_options.allow_growth = True
+currentParcels = []
+
 
 class BoundaryBox:
     def __init__(self, box, name:str, id):
@@ -94,7 +96,7 @@ class YOLOv7_DeepSORT:
         obj_imgs = []
         already_shown = []
         shown_ids = []
-        checkboxes = {}
+
         while True: # while video is running
             return_value, frame = vid.read()
             if not return_value:
@@ -173,19 +175,21 @@ class YOLOv7_DeepSORT:
                     obj_imgs.append(parcel)
                     already_shown.append(track.track_id)
 
+            toDisplay = []
             for x in obj_imgs:
                 if x.id not in shown_ids:
-                    checkbox_key = f"remove_{x.id}"
-                    remove_image = st.checkbox(f"Remove Object {x.id} - {x.name}", key=checkbox_key)
-                    checkboxes[checkbox_key] = remove_image
+                    tmp = np.array(cv2.imencode('.jpg', x.box)[1]).tobytes()
+                    toDisplay.append(f"data:image/jpeg;base64,{base64.b64encode(tmp).decode()}")
 
-            for x in obj_imgs:
-                if x.id not in shown_ids:
-                    checkbox_key = f"remove_{x.id}"
-                    if checkbox_key in checkboxes and checkboxes[checkbox_key]:
-                        shown_ids.append(x.id)
-                    else:
-                        st.image(x.box, caption=f"Object: {x.name} - ID: {x.id}")
+            clicked = clickable_images(obj_imgs,
+                                       div_style={"display": "flex", "justify-content": "center", "flex-wrap": "wrap"},
+                                       img_style={"margin": "5px", "height": "200px"},)
+            if clicked > -1:
+                currentParcels.append((obj_imgs[clicked].id, st.session_state.code))
+                shown_ids.append(obj_imgs[clicked].id)
+                del st.session_state.code
+                st.rerun()
+
                     
             # -------------------------------- Tracker work ENDS here -----------------------------------------------------------------------
             if verbose >= 1:
