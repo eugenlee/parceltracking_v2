@@ -91,6 +91,10 @@ class YOLOv7_DeepSORT:
 
         frame_num = 0
         output = st.empty()
+        obj_imgs = []
+        already_shown = []
+        shown_ids = []
+        checkboxes = {}
         while True: # while video is running
             return_value, frame = vid.read()
             if not return_value:
@@ -148,7 +152,6 @@ class YOLOv7_DeepSORT:
 
             self.tracker.predict()  # Call the tracker
             self.tracker.update(detections) #  updtate using Kalman Gain
-            obj_imgs = []
 
             for track in self.tracker.tracks:  # update new findings AKA tracks
                 if not track.is_confirmed() or track.time_since_update > 1:
@@ -165,9 +168,24 @@ class YOLOv7_DeepSORT:
                 if verbose == 2:
                     print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
 
-                parcel = BoundaryBox(frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])], class_name, track.track_id)
+                if track.track_id not in already_shown:
+                    parcel = BoundaryBox(frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])], class_name, track.track_id)
+                    obj_imgs.append(parcel)
+                    already_shown.append(track.track_id)
 
-                obj_imgs.append(parcel)
+            for x in obj_imgs:
+                if x.id not in shown_ids:
+                    checkbox_key = f"remove_{x.id}"
+                    remove_image = st.checkbox(f"Remove Object {x.id} - {x.name}", key=checkbox_key)
+                    checkboxes[checkbox_key] = remove_image
+
+            for x in obj_imgs:
+                if x.id not in shown_ids:
+                    checkbox_key = f"remove_{x.id}"
+                    if checkbox_key in checkboxes and checkboxes[checkbox_key]:
+                        shown_ids.append(x.id)
+                    else:
+                        st.image(x.box, caption=f"Object: {x.name} - ID: {x.id}")
                     
             # -------------------------------- Tracker work ENDS here -----------------------------------------------------------------------
             if verbose >= 1:
@@ -182,8 +200,6 @@ class YOLOv7_DeepSORT:
 
             if show_live:
                 output.image(result)
-                # for x in obj_imgs:
-                #     output.image(x.box, caption=f"Object: {x.name} - ID: {x.id}")
                 # cv2.imshow("Output Video", result)
                 # if cv2.waitKey(1) & 0xFF == ord('q'): break
         
