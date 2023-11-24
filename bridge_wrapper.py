@@ -6,6 +6,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # comment out below line to enable tensorflow logging outputs
 import time
 import tensorflow as tf
+import streamlit as st
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
@@ -30,7 +31,13 @@ from detection_helpers import *
  # load configuration for object detector
 config = ConfigProto()
 config.gpu_options.allow_growth = True
+obj_imgs = []
 
+class BoundaryBox:
+    def __init__(self, box, name:str, id):
+        self.box = box
+        self.name = name
+        self.id = id
 
 
 class YOLOv7_DeepSORT:
@@ -84,6 +91,7 @@ class YOLOv7_DeepSORT:
             out = cv2.VideoWriter(output, codec, fps, (width, height))
 
         frame_num = 0
+        output = st.empty()
         while True: # while video is running
             return_value, frame = vid.read()
             if not return_value:
@@ -156,6 +164,12 @@ class YOLOv7_DeepSORT:
 
                 if verbose == 2:
                     print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
+
+                parcel = BoundaryBox([frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])], class_name, track.track_id])
+
+                self.obj_imgs.append(parcel)
+                for x in self.obj_imgs:
+                    output.image(x.box, caption=f"Object: {x.name} - ID: {track.x.id}")
                     
             # -------------------------------- Tracker work ENDS here -----------------------------------------------------------------------
             if verbose >= 1:
@@ -169,7 +183,8 @@ class YOLOv7_DeepSORT:
             if output: out.write(result) # save output video
 
             if show_live:
-                cv2.imshow("Output Video", result)
-                if cv2.waitKey(1) & 0xFF == ord('q'): break
+                output.image(result)
+                # cv2.imshow("Output Video", result)
+                # if cv2.waitKey(1) & 0xFF == ord('q'): break
         
         cv2.destroyAllWindows()
