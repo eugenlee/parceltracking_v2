@@ -7,13 +7,13 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # comment out below line to enable tens
 import time
 import tensorflow as tf
 import streamlit as st
-from st_clickable_images import clickable_images
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
     
-import base64
+import cv2
+import numpy as np
 import matplotlib.pyplot as plt
 
 from tensorflow.compat.v1 import ConfigProto # DeepSORT official implementation uses tf1.x so we have to do some modifications to avoid errors
@@ -28,11 +28,9 @@ from tracking_helpers import read_class_names, create_box_encoder
 from detection_helpers import *
 
 
-# load configuration for object detector
+ # load configuration for object detector
 config = ConfigProto()
 config.gpu_options.allow_growth = True
-currentParcels = []
-
 
 class BoundaryBox:
     def __init__(self, box, name:str, id):
@@ -94,9 +92,10 @@ class YOLOv7_DeepSORT:
         frame_num = 0
         output = st.empty()
         obj_imgs = []
-        already_shown = []
+        already_tracked = []
         shown_ids = []
-
+        checkboxes = {}
+        removed_images = set()
         while True: # while video is running
             return_value, frame = vid.read()
             if not return_value:
@@ -170,27 +169,28 @@ class YOLOv7_DeepSORT:
                 if verbose == 2:
                     print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
 
-                if track.track_id not in already_shown:
+                if track.track_id not in already_tracked:
                     parcel = BoundaryBox(frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])], class_name, track.track_id)
                     obj_imgs.append(parcel)
-                    already_shown.append(track.track_id)
+                    already_tracked.append(parcel.id)
 
-            toDisplay = []
             for x in obj_imgs:
-                if x.id not in shown_ids:
-                    tmp = np.array(cv2.imencode('.jpg', x.box)[1]).tobytes()
-                    toDisplay.append(f"data:image/jpeg;base64,{base64.b64encode(tmp).decode()}")
+                if x.id not in shown_ids and x.id not in removed_images:
+                    shown_ids.append(x.id)
+                    checkbox_key = f"remove_{x.id}"
+                    remove_image = st.checkbox(f"Remove Object {x.id} - {x.name}", key=checkbox_key)
+                    if checkbox_key not in checkboxes:
+                        checkboxes[checkbox_key] = remove_image
 
-            clicked = clickable_images(obj_imgs,
-                                       div_style={"display": "flex", "justify-content": "center", "flex-wrap": "wrap"},
-                                       img_style={"margin": "5px", "height": "200px"},)
-            if clicked > -1:
-                currentParcels.append((obj_imgs[clicked].id, st.session_state.code))
-                shown_ids.append(obj_imgs[clicked].id)
-                del st.session_state.code
-                st.rerun()
+                    # Display the image if it hasn't been removed
+                    if x.id not in removed_images:
+                        st.image(x.box, caption=f"Object: {x.name} - ID: {x.id}")
 
-                    
+                    # Check if the checkbox is checked
+                    if checkboxes.get(checkbox_key, False):
+                        removed_images.add(x.id)  # Add the image ID to the set of removed images
+                        break  # Exit the loop to update the display
+                            
             # -------------------------------- Tracker work ENDS here -----------------------------------------------------------------------
             if verbose >= 1:
                 fps = 1.0 / (time.time() - start_time) # calculate frames per second of running detections
@@ -200,7 +200,7 @@ class YOLOv7_DeepSORT:
             result = np.asarray(frame)
             result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             
-            if output: out.write(result) # save output video
+            # if output: out.write(result) # save output video
 
             if show_live:
                 output.image(result)

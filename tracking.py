@@ -10,7 +10,7 @@ detector.load_model('./weights/best2.pt') # pass the path to the trained weight 
 tracker = YOLOv7_DeepSORT(reID_model_path="./deep_sort/model_weights/mars-small128.pb", detector=detector)
 
 # output = None will not save the output video
-tracker.track_video(0, output="./IO_data/output/yeah.avi", show_live = True, skip_frames = 0, count_objects = True, verbose=1)
+tracker.track_video(0, output=None, show_live = True, skip_frames = 5, count_objects = True, verbose=1)
 
 
 # self.conf_thres = conf_thres
