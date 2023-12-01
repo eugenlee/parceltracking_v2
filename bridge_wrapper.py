@@ -6,7 +6,6 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # comment out below line to enable tensorflow logging outputs
 import time
 import tensorflow as tf
-import streamlit as st
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
@@ -32,11 +31,6 @@ from detection_helpers import *
 config = ConfigProto()
 config.gpu_options.allow_growth = True
 
-class BoundaryBox:
-    def __init__(self, box, name:str, id):
-        self.box = box
-        self.name = name
-        self.id = id
 
 
 class YOLOv7_DeepSORT:
@@ -90,12 +84,6 @@ class YOLOv7_DeepSORT:
             out = cv2.VideoWriter(output, codec, fps, (width, height))
 
         frame_num = 0
-        output = st.empty()
-        obj_imgs = []
-        already_tracked = []
-        shown_ids = []
-        checkboxes = {}
-        removed_images = set()
         while True: # while video is running
             return_value, frame = vid.read()
             if not return_value:
@@ -168,29 +156,7 @@ class YOLOv7_DeepSORT:
 
                 if verbose == 2:
                     print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
-
-                if track.track_id not in already_tracked:
-                    parcel = BoundaryBox(frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])], class_name, track.track_id)
-                    obj_imgs.append(parcel)
-                    already_tracked.append(parcel.id)
-
-            for x in obj_imgs:
-                if x.id not in shown_ids and x.id not in removed_images:
-                    shown_ids.append(x.id)
-                    checkbox_key = f"remove_{x.id}"
-                    remove_image = st.checkbox(f"Remove Object {x.id} - {x.name}", key=checkbox_key)
-                    if checkbox_key not in checkboxes:
-                        checkboxes[checkbox_key] = remove_image
-
-                    # Display the image if it hasn't been removed
-                    if x.id not in removed_images:
-                        st.image(x.box, caption=f"Object: {x.name} - ID: {x.id}")
-
-                    # Check if the checkbox is checked
-                    if checkboxes.get(checkbox_key, False):
-                        removed_images.add(x.id)  # Add the image ID to the set of removed images
-                        break  # Exit the loop to update the display
-                            
+                    
             # -------------------------------- Tracker work ENDS here -----------------------------------------------------------------------
             if verbose >= 1:
                 fps = 1.0 / (time.time() - start_time) # calculate frames per second of running detections
@@ -203,8 +169,7 @@ class YOLOv7_DeepSORT:
             # if output: out.write(result) # save output video
 
             if show_live:
-                output.image(result)
-                # cv2.imshow("Output Video", result)
-                # if cv2.waitKey(1) & 0xFF == ord('q'): break
+                cv2.imshow("Output Video", result)
+                if cv2.waitKey(1) & 0xFF == ord('q'): break
         
         cv2.destroyAllWindows()
