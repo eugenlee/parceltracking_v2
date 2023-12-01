@@ -96,6 +96,7 @@ class YOLOv7_DeepSORT:
         shown_ids = []
         checkboxes = {}
         removed_images = set()
+        frame_counts = {}
         while True: # while video is running
             return_value, frame = vid.read()
             if not return_value:
@@ -173,6 +174,19 @@ class YOLOv7_DeepSORT:
                     parcel = BoundaryBox(frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])], class_name, track.track_id)
                     obj_imgs.append(parcel)
                     already_tracked.append(parcel.id)
+
+                # track if parcel isn't in image for 10 frames
+                if track.track_id not in frame_counts:
+                    frame_counts[track.track_id] = 1
+                else:
+                    frame_counts[track.track_id] += 1
+
+                if frame_counts[track.track_id] >= 10:
+                    # Remove the parcel from the displayed images
+                    removed_images.add(track.track_id)
+                    # Send EPCIS event code here (e.g., print or log a message)
+                    print(f"Parcel {track.track_id} not identified for 10 frames. Sending EPCIS event...")
+
 
             for x in obj_imgs:
                 if x.id not in shown_ids and x.id not in removed_images:
