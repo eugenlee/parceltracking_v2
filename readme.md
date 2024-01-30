@@ -1,3 +1,7 @@
+# CS632 Embedded Operating Systems Project
+[Slide Deck](https://drive.google.com/file/d/13cnFnsXUfbF9ULVdCihf2dDENKo2LDCT/view?usp=drive_link)
+[Paper](https://drive.google.com/file/d/10lM0Uy2-HLylQrkmWVuuwvOLeu3Y0y-G/view?usp=drive_link)
+
 # Welcome!
 This repo uses official implementations (with modifications) of [YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors](https://github.com/WongKinYiu/yolov7) and [Simple Online and Realtime Tracking with a Deep Association Metric (Deep SORT)](https://github.com/nwojke/deep_sort)  to detect objects from images, videos and then track objects in Videos (tracking in images does not make sense)
 
