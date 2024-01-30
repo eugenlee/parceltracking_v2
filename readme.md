@@ -1,6 +1,10 @@
 # CS632 Embedded Operating Systems Project
 * [Slide Deck](https://drive.google.com/file/d/13cnFnsXUfbF9ULVdCihf2dDENKo2LDCT/view?usp=drive_link)
-* [Paper](https://drive.google.com/file/d/10lM0Uy2-HLylQrkmWVuuwvOLeu3Y0y-G/view?usp=drive_link)
+* [Paper](https://drive.google.com/file/d/1QZmHzIrYPpEGQZGN2LZB054afvkNXfJr/view?usp=drive_link)
+
+**Abstract**
+
+We present ParcelGuard, a new parcel-tracking system that combines GPS-based outdoor tracking and Vision AI-based parcel tracking for indoor tracking. We built our system based on embedded devices where Nvidia Jetson was used to implement AI Models and Web interfaces, and LattePanda was used for GS1 Digital Link, FIWARE, and GS1 EPCIS. ParcelGuard provides real-time tracking that can cover the entire parcel lifecycle, from distribution to the final delivery, which can improve parcel security and management, and offer robust tracking capabilities, and improve user experience.
 
 # Welcome!
 This repo uses official implementations (with modifications) of [YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors](https://github.com/WongKinYiu/yolov7) and [Simple Online and Realtime Tracking with a Deep Association Metric (Deep SORT)](https://github.com/nwojke/deep_sort)  to detect objects from images, videos and then track objects in Videos (tracking in images does not make sense)
